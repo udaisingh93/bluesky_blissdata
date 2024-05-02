@@ -150,7 +150,6 @@ class blissdata_dispacher:
     def push_datastream(self, doc):
     # ------------------------------------------------------------------ #
     # ------------------------------------------------------------------ #
-        print(doc.get('data'))
         _logger.debug(f"pushing data to redis sever for {self.uid}")
         _logger.debug(f"event doc data {doc}")
         data=doc.get('data')
