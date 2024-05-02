@@ -122,7 +122,7 @@ def setup_logging(loglevel):
 def main(argv=None) -> int:
     args = parse_args(sys.argv[1:])
     setup_logging(args.loglevel)
-    _logger.debug("Starting bluesky_blissdata...")
+    _logger.info("starting bluesky_blissdata")
     d = RemoteDispatcher((args.zmq_host, args.zmq_port))
     
     post_document=blissdata_dispacher(args.redis_host,args.redis_port)

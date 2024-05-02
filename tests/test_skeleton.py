@@ -1,6 +1,6 @@
 import pytest
 
-from bluesky_blissdata.skeleton import fib, main
+from bluesky_blissdata.run import fib, main
 
 __author__ = "Udai Singh"
 __copyright__ = "Udai Singh"

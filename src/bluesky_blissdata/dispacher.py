@@ -7,7 +7,8 @@ from blissdata.redis_engine.scan import ScanState
 from blissdata.redis_engine.encoding.numeric import NumericStreamEncoder
 from blissdata.redis_engine.encoding.json import JsonStreamEncoder
 from blissdata.schemas.scan_info import ScanInfoDict, DeviceDict, ChainDict, ChannelDict
-
+import logging
+_logger = logging.getLogger(__name__)
 # Configure blissdata for a Redis database
 
 
@@ -22,9 +23,11 @@ from blissdata.schemas.scan_info import ScanInfoDict, DeviceDict, ChainDict, Cha
 
 class blissdata_dispacher:
     def __init__(self,host="localhost",port=6380) :
+        _logger.info("Connecting to redis sever")
         try:
             self._data_store = DataStore("redis://"+host+":"+str(port))
         except OSError as e:
+            _logger.debug("Error in connecting to redis sever")
             raise ConnectionError(self._error_message(e))
             
             
@@ -51,6 +54,7 @@ class blissdata_dispacher:
         self.scan_id['name']=doc.get('plan_name',self.scan_id['name'])
         self.scan_id['number']=doc.get('scan_id',self.scan_id['number'])
         self.uid=doc.get('uid')
+        _logger.info(f"Sending new scan data with uid {self.uid}")
         self.scan = self._data_store.create_scan(
             self.scan_id, info={"name": doc['plan_name'],"uid":self.uid})
         self.dets=doc.get('detectors')
@@ -77,6 +81,7 @@ class blissdata_dispacher:
     def config_datastream(self,doc):
         ddesc_dict = {}
         self.stream_list={}
+        _logger.debug(f"Preparing datastream for {self.uid}")
         self.acq_chain: dict[str, ChainDict] = {}
         self.channels: dict[str, ChannelDict] = {}
         elem={'name':None,"label":None,'dtype':None,"shape":None,"unit":None}
@@ -146,6 +151,8 @@ class blissdata_dispacher:
     # ------------------------------------------------------------------ #
     # ------------------------------------------------------------------ #
         print(doc.get('data'))
+        _logger.debug(f"pushing data to redis sever for {self.uid}")
+        _logger.debug(f"event doc data {doc}")
         data=doc.get('data')
         for k  in data.keys():
     
