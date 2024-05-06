@@ -25,10 +25,15 @@ class blissdata_dispacher:
     def __init__(self,host="localhost",port=6380) :
         _logger.info("Connecting to redis sever")
         try:
-            self._data_store = DataStore("redis://"+host+":"+str(port))
+            self._data_store = DataStore("redis://"+host+":"+str(port),init_db=True)
         except OSError as e:
             _logger.debug("Error in connecting to redis sever")
             raise ConnectionError(self._error_message(e))
+        except RuntimeError as e:
+            try: 
+                self._data_store = DataStore("redis://"+host+":"+str(port),init_db=True)
+            except RuntimeError as e:
+                raise RuntimeError(self._error_message(e))
             
             
     
