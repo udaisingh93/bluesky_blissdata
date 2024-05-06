@@ -212,6 +212,7 @@ class blissdata_dispacher:
             "type": self.scan.name,
             "npoints": self.npoints,
             "count_time": self.count_time,
+            "title": self.scan.name + str(self.scan.number),
             
             ##################################
             # Device information
@@ -257,7 +258,7 @@ class blissdata_dispacher:
             ##################################
             # Mandatory by the schema
             ##################################
-            "user_name": os.getlogin(),  # tangosys?
+            "user_name": "bluesky",  # tangosys?
         }
 
         scan_info["plots"].append({"kind": "curve-plot"})
