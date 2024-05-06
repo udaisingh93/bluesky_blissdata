@@ -26,7 +26,6 @@ import sys
 from bluesky.callbacks.zmq import RemoteDispatcher
 from bluesky_blissdata.dispacher import blissdata_dispacher
 from bluesky_blissdata import __version__
-from docopt import docopt, DocoptExit
 __author__ = "Udai Singh"
 __copyright__ = "Udai Singh"
 __license__ = "MIT"

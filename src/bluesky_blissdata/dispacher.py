@@ -31,7 +31,7 @@ class blissdata_dispacher:
             raise ConnectionError(self._error_message(e))
         except RuntimeError as e:
             try: 
-                self._data_store = DataStore("redis://"+host+":"+str(port),init_db=True)
+                self._data_store = DataStore("redis://"+host+":"+str(port))
             except RuntimeError as e:
                 raise RuntimeError(self._error_message(e))
             
