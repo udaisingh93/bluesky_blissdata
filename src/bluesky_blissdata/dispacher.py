@@ -97,10 +97,12 @@ class blissdata_dispacher:
             elem['shape']=doc.get("data_keys")[dev]['shape']
             elem['precision']=doc.get("data_keys")[dev]['precision']
             unit=""
-            if elem['name'] in self.motors:
-                device_type="axis"
-            if elem['name'] in self.dets:
-                device_type = "counters"
+            if self.motors is not None:
+                if elem['name'] in self.motors:
+                    device_type="axis"
+            if self.dets is not None:
+                if elem['name'] in self.dets:
+                    device_type = "counters"
             self.devices[device_type]['channels'].append(dev)
             self.channels[elem['label']] = ChannelDict(device=device_type,
                                                dim=len(elem['shape']),
