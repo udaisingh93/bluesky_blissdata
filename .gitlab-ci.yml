@@ -21,7 +21,8 @@ stages:          # List of stages for jobs, and their order of execution
   - test
   - deploy
 image: docker
-
+services:
+  - docker:dind
 build-job:       # This job runs in the build stage, which runs first.
   stage: build
   script:
