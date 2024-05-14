@@ -20,11 +20,13 @@ stages:          # List of stages for jobs, and their order of execution
   - build
   - test
   - deploy
-image: docker
-services:
-  - docker:dind
+
+
 build-job:       # This job runs in the build stage, which runs first.
   stage: build
+  image: docker
+  services:
+  - docker:dind
   script:
     - echo "Compiling the code..."
     - docker build -t gitlab.desy.de:5555/fs-ec/docker/bluesky_bliss_data ./docker
@@ -47,6 +49,8 @@ build-job:       # This job runs in the build stage, which runs first.
 
 deploy-job:      # This job runs in the deploy stage.
   stage: deploy  # It only runs when *both* jobs in the test stage complete successfully.
-  environment: production
+  image: docker
+  services:
+  - docker:dind
   script:
     - docker push gitlab.desy.de:5555/fs-ec/docker/bluesky_bliss_data
