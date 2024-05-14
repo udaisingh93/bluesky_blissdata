@@ -39,6 +39,6 @@ RUN ["/bin/bash", "-c", ". /opt/conda/etc/profile.d/conda.sh && \
     . /opt/conda/etc/profile.d/mamba.sh && \
     pip install --no-cache-dir pyzmq==22.3.0 supervisor multivisor[web]"]
 
-COPY ./supervisord.conf /etc/supervisor/supervisord.conf
+COPY ./docker/supervisord.conf /etc/supervisor/supervisord.conf
 
 ENTRYPOINT ["/bin/bash", "-c", ". /opt/conda/etc/profile.d/conda.sh && supervisord"]
