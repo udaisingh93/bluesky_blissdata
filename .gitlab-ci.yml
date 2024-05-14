@@ -16,9 +16,9 @@
 # This specific template is located at:
 # https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Getting-Started.gitlab-ci.yml
 default:
-  image: docker:24.0.5
+  image: docker:dind
   services:
-    - name: registry.hub.docker.com/library/docker:24.0.5-dind
+    - name: registry.hub.docker.com/library/docker:dind
       alias: docker
   before_script:
     - docker info
