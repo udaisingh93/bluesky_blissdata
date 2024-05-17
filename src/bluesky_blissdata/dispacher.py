@@ -8,6 +8,7 @@ from blissdata.redis_engine.encoding.numeric import NumericStreamEncoder
 from blissdata.redis_engine.encoding.json import JsonStreamEncoder
 from blissdata.schemas.scan_info import ScanInfoDict, DeviceDict, ChainDict, ChannelDict
 import logging
+import datetime
 _logger = logging.getLogger(__name__)
 # Configure blissdata for a Redis database
 
@@ -64,7 +65,8 @@ class blissdata_dispacher:
             self.scan_id, info={"name": doc['plan_name'],"uid":self.uid})
         self.dets=doc.get('detectors')
         self.motors=doc.get('motors')
-        self.start_time=doc['time']
+        dt = datetime.datetime.fromtimestamp(doc['time'])
+        self.start_time=dt.isoformat()
         self.npoints=doc['num_points']
         self.count_time=1
         self.start=[]
@@ -141,10 +143,12 @@ class blissdata_dispacher:
         self.acq_chain["axis"] = ChainDict(
             top_master="timer",
             devices=list(self.devices.keys()),
-            scalars=[f"{device}:{channel}" for device, details in devices.items() if device != 'timer' for channel in details['channels']],
+            scalars=[f"{device}:{channel}" for device, details in self.devices.items() if device != 'timer' for channel in details['channels']],
             spectra=[],
             images=[],
-            master={})
+            master = { "scalars": [f"{device}:{channel}" for device, details in self.devices.items() if device == 'timer' for channel in details['channels']],
+            "spectra": [],
+            "images": [],})
     # gather some metadata before running the scan
         scan_info = self.scan_info(ddesc_dict)
         self.scan.info.update(scan_info)
@@ -173,6 +177,7 @@ class blissdata_dispacher:
             ch_stream = self.stream_list['time']
         except KeyError:
             self.warning("Stream for {} not found".format(k))
+        # dt = datetime.datetime.fromtimestamp(doc['time'])
         ch_stream.send(doc['time'])
 
     # close streams
@@ -181,6 +186,7 @@ class blissdata_dispacher:
         # array_stream.seal()
         # json_stream.seal()
     def stop_datastream(self,doc):
+        _logger.debug(f"stopping doc data {doc}")
         for stream in self.stream_list.values():
             try:
                 stream.seal()
@@ -191,7 +197,8 @@ class blissdata_dispacher:
                 continue
 
         self.scan.stop()
-        self.scan.info['end_time'] = doc['time']
+        dt = datetime.datetime.fromtimestamp(doc['time'])
+        self.scan.info['end_time'] = dt.isoformat()
         self.scan.info['exit_status'] = doc['exit_status']
         self.scan.info['reason']=doc['reason']
         self.scan.info['num_events']=doc['num_events']
