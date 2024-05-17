@@ -141,7 +141,7 @@ class blissdata_dispacher:
         self.acq_chain["axis"] = ChainDict(
             top_master="timer",
             devices=list(self.devices.keys()),
-            scalars=[],
+            scalars=[f"{device}:{channel}" for device, details in devices.items() if device != 'timer' for channel in details['channels']],
             spectra=[],
             images=[],
             master={})
