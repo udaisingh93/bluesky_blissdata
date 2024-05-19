@@ -111,7 +111,7 @@ class blissdata_dispacher:
                                                display_name=dev)
             
             encoder = NumericStreamEncoder(dtype=np.float64,shape=elem['shape'])
-            scalar_stream = self.scan.create_stream(elem['label'], encoder, info={"unit": unit})
+            scalar_stream = self.scan.create_stream(elem['label'], encoder, info={"unit": unit,"shape":[],"dtype":"float64",})
             ddesc_dict[elem['label']] =elem
             self.stream_list[elem['label']] = scalar_stream
         elem['name']="timer"
@@ -127,7 +127,7 @@ class blissdata_dispacher:
                                                display_name=elem['name'])
             
         encoder = NumericStreamEncoder(dtype=np.float64,shape=elem['shape'])
-        scalar_stream = self.scan.create_stream( elem['label'], encoder, info={"unit": unit})
+        scalar_stream = self.scan.create_stream( elem['label'], encoder, info={"unit": unit, "shape": [],"dtype": "float64",})
         ddesc_dict[elem['label']] =elem
         self.stream_list[elem['label']] = scalar_stream
         # self.scalar_stream = self.scan.create_stream("scalars", encoder, info={"unit": "mV", "embed the info": "you want"})
@@ -143,10 +143,10 @@ class blissdata_dispacher:
         self.acq_chain["axis"] = ChainDict(
             top_master="timer",
             devices=list(self.devices.keys()),
-            scalars=[f"{device}:{channel}" for device, details in self.devices.items() if device != 'timer' for channel in details['channels']],
+            scalars=[f"{channel}" for device, details in self.devices.items() if device != 'timer' for channel in details['channels']],
             spectra=[],
             images=[],
-            master = { "scalars": [f"{device}:{channel}" for device, details in self.devices.items() if device == 'timer' for channel in details['channels']],
+            master = { "scalars": [f"{channel}" for device, details in self.devices.items() if device == 'timer' for channel in details['channels']],
             "spectra": [],
             "images": [],})
     # gather some metadata before running the scan
@@ -200,8 +200,10 @@ class blissdata_dispacher:
         dt = datetime.datetime.fromtimestamp(doc['time'])
         self.scan.info['end_time'] = dt.isoformat()
         self.scan.info['exit_status'] = doc['exit_status']
-        self.scan.info['reason']=doc['reason']
+        if doc['exit_status'] == 'success':
+            self.scan.info['end_reason']= "SUCCESS"
         self.scan.info['num_events']=doc['num_events']
+        self.scan.info['reason']=doc['reason']
         self.scan.close()
     # ------------------------------------------------------------------ #
         
