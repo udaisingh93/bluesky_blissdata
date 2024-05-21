@@ -61,6 +61,7 @@ class BlissDataDispatcher:
         self.scan_id['number']=doc.get('scan_id',self.scan_id['number'])
         self.uid=doc.get('uid')
         _logger.info(f"Sending new scan data with uid {self.uid}")
+        _logger.debug(f"Recieved doc: {doc}")
         self.scan = self._data_store.create_scan(
             self.scan_id, info={"name": doc['plan_name'],"uid":self.uid})
         self.dets=doc.get('detectors')
@@ -88,7 +89,8 @@ class BlissDataDispatcher:
     def config_datastream(self,doc):
         ddesc_dict = {}
         self.stream_list={}
-        _logger.debug(f"Preparing datastream for {self.uid}")
+        _logger.info(f"Configuring datastream for {self.uid}")
+        _logger.debug(f"Recieved doc: {doc}")
         self.acq_chain: dict[str, ChainDict] = {}
         self.channels: dict[str, ChannelDict] = {}
         elem={'name':None,"label":None,'dtype':None,"shape":None,"unit":None}
