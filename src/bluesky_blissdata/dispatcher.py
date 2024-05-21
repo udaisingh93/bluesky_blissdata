@@ -22,7 +22,7 @@ _logger = logging.getLogger(__name__)
 
 # ------------------------------------------------------------------ #
 
-class blissdata_dispacher:
+class BlissDataDispatcher:
     def __init__(self,host="localhost",port=6380) :
         _logger.info("Connecting to redis sever")
         try:
