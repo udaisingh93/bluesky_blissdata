@@ -95,11 +95,12 @@ class BlissDataDispatcher:
         self.channels: dict[str, ChannelDict] = {}
         elem={'name':None,"label":None,'dtype':None,"shape":None,"unit":None}
         for dev in doc.get("data_keys").keys():
-            elem['name']=doc.get("data_keys")[dev]['object_name']
             elem['label']=dev
+            dev=doc['data_keys'][dev]
+            elem['name']=dev.get('object_name')
             elem['dtype']=np.float64
-            elem['shape']=doc.get("data_keys")[dev]['shape']
-            elem['precision']=doc.get("data_keys")[dev]['precision']
+            elem['shape']=dev.get('shape',[])
+            elem['precision']=dev.get('precision',4)
             unit=""
             if self.motors is not None:
                 if elem['name'] in self.motors:
@@ -107,10 +108,10 @@ class BlissDataDispatcher:
             if self.dets is not None:
                 if elem['name'] in self.dets:
                     device_type = "counters"
-            self.devices[device_type]['channels'].append(dev)
+            self.devices[device_type]['channels'].append(elem['label'])
             self.channels[elem['label']] = ChannelDict(device=device_type,
                                                dim=len(elem['shape']),
-                                               display_name=dev)
+                                               display_name=elem['label'])
             
             encoder = NumericStreamEncoder(dtype=np.float64,shape=elem['shape'])
             scalar_stream = self.scan.create_stream(elem['label'], encoder, info={"unit": unit,"shape":[],"dtype":"float64",})
