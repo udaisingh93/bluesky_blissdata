@@ -22,7 +22,7 @@ _logger = logging.getLogger(__name__)
 
 # ------------------------------------------------------------------ #
 
-class BlissDataDispatcher:
+class blissdata_dispacher:
     def __init__(self,host="localhost",port=6380) :
         _logger.info("Connecting to redis sever")
         try:
@@ -61,23 +61,23 @@ class BlissDataDispatcher:
         self.scan_id['number']=doc.get('scan_id',self.scan_id['number'])
         self.uid=doc.get('uid')
         _logger.info(f"Sending new scan data with uid {self.uid}")
-        _logger.debug(f"Recieved doc: {doc}")
+        _logger.debug(f"prepare scan doc data {doc}")
         self.scan = self._data_store.create_scan(
             self.scan_id, info={"name": doc['plan_name'],"uid":self.uid})
         self.dets=doc.get('detectors')
         self.motors=doc.get('motors')
         dt = datetime.datetime.fromtimestamp(doc['time'])
         self.start_time=dt.isoformat()
-        self.npoints=doc['num_points']
+        self.npoints=doc.get('num_points',0)
         self.count_time=1
         self.start=[]
         self.stop=[]
-        if self.motors is not None:
-            j=0
-            for i in range(len(self.motors)):
-                self.start.append(doc.get('plan_args')['args'][j+1])
-                self.stop.append(doc.get('plan_args')['args'][j+2])
-                j+=3
+        # if self.motors is not None:
+            # j=0
+            # for i in range(len(self.motors)):
+                # self.start.append(doc.get('plan_args')['args'][j+1])
+                # self.stop.append(doc.get('plan_args')['args'][j+2])
+                # j+=3
         self.devices: dict[str, DeviceDict] = {}
         self.devices["timer"] = DeviceDict(
             name="timer", channels=[], metadata={})
@@ -89,8 +89,7 @@ class BlissDataDispatcher:
     def config_datastream(self,doc):
         ddesc_dict = {}
         self.stream_list={}
-        _logger.info(f"Configuring datastream for {self.uid}")
-        _logger.debug(f"Recieved doc: {doc}")
+        _logger.debug(f"Preparing datastream for {self.uid}")
         self.acq_chain: dict[str, ChainDict] = {}
         self.channels: dict[str, ChannelDict] = {}
         elem={'name':None,"label":None,'dtype':None,"shape":None,"unit":None}
