@@ -24,7 +24,7 @@ import argparse
 import logging
 import sys
 from bluesky.callbacks.zmq import RemoteDispatcher
-from bluesky_blissdata.dispatcher import BlissdataDispatcher
+from bluesky_blissdata.dispatcher import blissdata_dispatcher
 from bluesky_blissdata import __version__
 __author__ = "Udai Singh"
 __copyright__ = "Udai Singh"
@@ -126,7 +126,7 @@ def main(argv=None) -> int:
     _logger.info(f"Connectiong to zmq sever: {args.zmq_host}:{args.zmq_port}")
     d = RemoteDispatcher((args.zmq_host, args.zmq_port))
     
-    post_document=BlissDataDispatcher(args.redis_host,args.redis_port)
+    post_document=blissdata_dispatcher(args.redis_host,args.redis_port)
     d.subscribe(post_document)
     d.start()
     _logger.info("stoping bluesky_blissdata")
