@@ -72,12 +72,12 @@ class blissdata_dispatcher:
         self.count_time=1
         self.start=[]
         self.stop=[]
-        # if self.motors is not None:
-            # j=0
-            # for i in range(len(self.motors)):
-                # self.start.append(doc.get('plan_args')['args'][j+1])
-                # self.stop.append(doc.get('plan_args')['args'][j+2])
-                # j+=3
+        if self.motors is not None and self.scan.name.lower().find("grid")>-1:
+            j=0
+            for i in range(len(self.motors)):
+                self.start.append(doc.get('plan_args')['args'][j+1])
+                self.stop.append(doc.get('plan_args')['args'][j+2])
+                j+=3
         self.devices: dict[str, DeviceDict] = {}
         self.devices["timer"] = DeviceDict(
             name="timer", channels=[], metadata={})
@@ -90,9 +90,10 @@ class blissdata_dispatcher:
         ddesc_dict = {}
         self.stream_list={}
         _logger.debug(f"Preparing datastream for {self.uid}")
+        _logger.debug(f"prepare scan doc data {doc}")
         self.acq_chain: dict[str, ChainDict] = {}
         self.channels: dict[str, ChannelDict] = {}
-        elem={'name':None,"label":None,'dtype':None,"shape":None,"unit":None}
+        elem={'name':None,"label":None,'dtype':None,"shape":None,"unit":None,'precision':None,'plot_type':0}
         for dev in doc.get("data_keys").keys():
             elem['label']=dev
             dev=doc['data_keys'][dev]
@@ -100,22 +101,49 @@ class blissdata_dispatcher:
             elem['dtype']=np.float64
             elem['shape']=dev.get('shape',[])
             elem['precision']=dev.get('precision',4)
+    
             unit=""
+            plot_axes=self.motors
             if self.motors is not None:
                 if elem['name'] in self.motors:
                     device_type="axis"
+                    if (self.scan.name.lower().find("grid")>-1):
+                        elem['plot_type']=2
+                        elem['plot_axes']=plot_axes
+                    else:
+                        elem['plot_type']=1
+                        elem['plot_axes']=plot_axes
+                    # if (self.scan_id['name'].lower().find("grid")>-1):
+                    #     elem['plot_type']=2
+                    #     elem['plot_axes']=plot_axes
+                        
+                    # else:
+                    #     elem['plot_type']=1
             if self.dets is not None:
                 if elem['name'] in self.dets:
                     device_type = "counters"
+                    elem["group"] = "scatter"
+                    # if (self.scan_id['name'].lower().find("grid")>-1):
+                    #     elem['plot_type']=2
+                    # else:
+                    #     elem['plot_type']=1
             self.devices[device_type]['channels'].append(elem['label'])
-            self.channels[elem['label']] = ChannelDict(device=device_type,
+            if (self.scan.name.lower().find("grid")>-1):
+                self.channels[elem['label']] = ChannelDict(device=device_type,
                                                dim=len(elem['shape']),
-                                               display_name=elem['label'])
-            
+                                               display_name=elem['label'],group= "scatter")
+            else:
+                self.channels[elem['label']] = ChannelDict(device=device_type,
+                                               dim=len(elem['shape']),
+                                               display_name=elem['label'],group= "scatter")
             encoder = NumericStreamEncoder(dtype=np.float64,shape=elem['shape'])
-            scalar_stream = self.scan.create_stream(elem['label'], encoder, info={"unit": unit,"shape":[],"dtype":"float64",})
-            ddesc_dict[elem['label']] =elem
+            if (self.scan.name.lower().find("grid")>-1):
+                scalar_stream = self.scan.create_stream(elem['label'], encoder, info={"unit": unit,"shape":[],"dtype":"float64","group": "scatter"})
+            else:
+                scalar_stream = self.scan.create_stream(elem['label'], encoder, info={"unit": unit,"shape":[],"dtype":"float64",})
+            ddesc_dict[elem['label']] =dict(elem)
             self.stream_list[elem['label']] = scalar_stream
+        print(ddesc_dict)
         elem['name']="timer"
         elem['label']="time"
         elem['dtype']=np.float64
@@ -130,7 +158,8 @@ class blissdata_dispatcher:
             
         encoder = NumericStreamEncoder(dtype=np.float64,shape=elem['shape'])
         scalar_stream = self.scan.create_stream( elem['label'], encoder, info={"unit": unit, "shape": [],"dtype": "float64",})
-        ddesc_dict[elem['label']] =elem
+        ddesc_dict[elem['label']] =dict(elem)
+        print(ddesc_dict)
         self.stream_list[elem['label']] = scalar_stream
         # self.scalar_stream = self.scan.create_stream("scalars", encoder, info={"unit": "mV", "embed the info": "you want"})
 
@@ -259,7 +288,7 @@ class blissdata_dispatcher:
             #     "datadesc",
             # ],
             # "nexuswriter": {
-            #     "devices": {},
+            #     "devices": {},self.motors[0]
             #     "instrument_info": {"name": "alba-"+self.scan.beamline, "name@short_name": self.scan.beamline},
             #     "masterfiles": masterfiles,
             #     "technique": {},
@@ -273,27 +302,35 @@ class blissdata_dispatcher:
             ##################################
             "user_name": "bluesky",  # tangosys?
         }
-
-        scan_info["plots"].append({"kind": "curve-plot"})
+        
+            
+    
 
         # Add curves selected in measurement group for plotting
-        for elem in ddesc_dict.items():
-            try:
-                plot_type = elem[1].get("plot_type", 0)
-                plot_axes = elem[1].get("plot_axes", [])
-                name = elem[1].get("label", "")
-                axes = []
-                if plot_type == 1:
-                    for axis in plot_axes:
-                        if "<idx>" in axis:
-                            axis = "#Pt No"
-                        axes.append({"kind": "curve", "x": axis, "y": name})
-                    scan_info["plots"].append(
-                        {"kind": "curve-plot", "name": name, "items": axes})
-                elif plot_type == 2:
-                    self.info("Image plot not implemented yet")
-            except IndexError:
-                continue
-
+        axes = []
+        # for motor in self.motors:
+        if self.motors is not None:
+            elem=ddesc_dict[self.motors[0]]
+        else:
+            elem=ddesc_dict['time']
+        plot_type = elem.get("plot_type", 0)
+        plot_axes = elem.get("plot_axes", [])
+        name = elem.get("label", "")
+        
+        if plot_type == 1:
+            for axis in plot_axes:
+                if elem['name'] != axis:
+                    axes.append({"kind": "curve", "x": axis, "y": elem['name']})
+        elif plot_type == 2:
+            for axis in plot_axes:
+                if elem['name'] != axis:
+                    axes.append({"kind": "scatter", "x": axis, "y": elem['name']})
+        elif plot_type == 3:
+            self.info("Image plot not implemented yet")
+        
+        if (scan_info["name"].lower().find("grid")>-1):
+            scan_info["plots"].append({"kind": "scatter-plot","name": "Scatter", "items": axes})
+        else:
+            scan_info["plots"].append({"kind": "curve-plot", "name": "Curve", "items": axes})
         return scan_info
 
