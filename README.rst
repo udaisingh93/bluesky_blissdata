@@ -35,4 +35,8 @@
 bluesky-blissdata
 =================
 
+Blissdata is a Python library developed by the European Synchrotron Radiation Facility (ESRF) for the Beamline Instrumentation Support Software (BLISS) project. This system is optimized for storing and managing beamline experiment data.
 
+Streaming and a h5py-like API for transparently fetching data from memory or saved files. for clients, such as data processing and visualization.
+
+Launching Blissdata within Bluesky enables Bluesky to use ESRF tools and to improve interoperability and collaboration within the synchrotron community.

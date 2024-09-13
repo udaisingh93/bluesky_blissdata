@@ -8,9 +8,8 @@ build-docs:
   image: python
   before_script:
     - pip install tox
-    - pip install -e .
   script:
-    - tox -e .
+    - tox -e docs
   artifacts:
     paths: 
       - docs
