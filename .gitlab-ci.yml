@@ -11,8 +11,9 @@ build-docs:
     - pip install -e .
   script:
     - tox -e .
-  artifacts: 
-    - docs
+  artifacts:
+    paths: 
+      - docs
 build-job:       # This job runs in the build stage, which runs first.
   stage: deploy
   image:
@@ -29,5 +30,6 @@ pages:
   script:
    - mv docs/_build/html public
   artifacts:
-   - public
+    paths:
+      - public
 
