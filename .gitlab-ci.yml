@@ -7,6 +7,8 @@ build-docs:
   stage: build
   image: python
   before_script:
+    - apt-get -y update
+    - apt-get install -y cmake
     - pip install tox
   script:
     - tox -e docs
