@@ -13,6 +13,19 @@ build-docs:
   artifacts:
     paths: 
       - docs
+test-job:
+  stage: test
+  image: python
+  services:
+    - name: redis:latest
+      alias: redis
+  variables:
+    redis_host: redis
+    redis_port: 6379
+  before_script:
+    - pip install .
+  script:
+    - pytest tests
 build-job:       # This job runs in the build stage, which runs first.
   stage: deploy
   image:

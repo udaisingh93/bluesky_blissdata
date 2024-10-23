@@ -21,8 +21,9 @@ class ExceptionHandler:
 class BlissdataDispatcher:
     _data_store: DataStore
     scan: Scan
+    scan_id: Dict[str, Any] = {}
     uid: Optional[str] = None
-    devices: Dict[str, DeviceDict]
+    devices: Dict[str, DeviceDict] = {}
     dets: Optional[List[str]] = None
     motors: Optional[List[str]] = None
     start_time: Optional[str] = None
@@ -30,9 +31,9 @@ class BlissdataDispatcher:
     count_time: Optional[int] = None
     start: Optional[List[float]] = None
     stop: Optional[List[float]] = None
-    stream_list: Dict[str, Any]
-    acq_chain: Dict[str, ChainDict]
-    channels: Dict[str, ChannelDict]
+    stream_list: Dict[str, Any] = {}
+    acq_chain: Dict[str, ChainDict] = {}
+    channels: Dict[str, ChannelDict] = {}
 
     def __init__(self, host: str = "localhost", port: int = 6380) -> None:
         _logger.info("Connecting to redis server")
@@ -66,13 +67,15 @@ class BlissdataDispatcher:
             self.stop_datastream(doc)
 
     def prepare_scan(self, doc: Dict[str, Any]) -> None:
-        self.scan_id["name"] = doc.get("plan_name", self.scan_id["name"])
-        self.scan_id["number"] = doc.get("scan_id", self.scan_id["number"])
+        self.scan_id["name"] = doc.get("plan_name", self.scan_id.get("name", ""))
+        self.scan_id["number"] = doc.get("scan_id", self.scan_id.get("number", 0))
+        self.scan_id["data_policy"] = doc.get("data_policy", self.scan_id.get("data_policy", ""))
         self.uid = doc.get("uid")
         _logger.info(f"Sending new scan data with uid {self.uid}")
         _logger.debug(f"prepare scan doc data {doc}")
         self.scan = self._data_store.create_scan(
-            self.scan_id, info={"name": doc["plan_name"], "uid": self.uid}
+            self.scan_id,
+            info={"name": doc["plan_name"], "uid": self.uid}
         )
         self.dets = doc.get("detectors")
         self.motors = doc.get("motors")
