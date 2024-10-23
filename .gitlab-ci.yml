@@ -7,16 +7,13 @@ build-docs:
   stage: build
   image: python
   before_script:
-    - apt-get -y update
-    - apt-get install -y cmake
-    - pip install -r docs/requirements.txt
-    - pip install tox pyarrow
-    - pip install .
+    - pip install tox
   script:
     - tox -e docs
   artifacts:
-    paths: 
+    paths:
       - docs
+
 test-job:
   stage: test
   image: python
