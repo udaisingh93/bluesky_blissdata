@@ -2,11 +2,8 @@
 import numpy as np
 
 from blissdata.redis_engine.store import DataStore
-import os
-from blissdata.redis_engine.scan import ScanState
 from blissdata.redis_engine.encoding.numeric import NumericStreamEncoder
-from blissdata.redis_engine.encoding.json import JsonStreamEncoder
-from blissdata.schemas.scan_info import ScanInfoDict, DeviceDict, ChainDict, ChannelDict
+from blissdata.schemas.scan_info import DeviceDict, ChainDict, ChannelDict
 import logging
 import datetime
 _logger = logging.getLogger(__name__)
@@ -30,7 +27,7 @@ class blissdata_dispatcher:
         except OSError as e:
             _logger.debug("Error in connecting to redis sever")
             raise ConnectionError(self._error_message(e))
-        except RuntimeError as e:
+        except RuntimeError:
             try: 
                 self._data_store = DataStore("redis://"+host+":"+str(port))
             except RuntimeError as e:
@@ -315,7 +312,6 @@ class blissdata_dispatcher:
             elem=ddesc_dict['time']
         plot_type = elem.get("plot_type", 0)
         plot_axes = elem.get("plot_axes", [])
-        name = elem.get("label", "")
         
         if plot_type == 1:
             for axis in plot_axes:
