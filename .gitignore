@@ -55,3 +55,5 @@ MANIFEST
 
 # Virtual envs
 venv/
+
+.ipynb_checkpoints/

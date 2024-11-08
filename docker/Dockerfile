@@ -26,6 +26,7 @@ RUN ["/bin/bash", "-c", ". /opt/conda/etc/profile.d/conda.sh && \
     mamba create -n bluesky_blissdata python=3.9 &&\
     conda config --env --append channels esrf-bcu &&\
     mamba activate  bluesky_blissdata && \
+    mamba install h5py && \
     mamba install blissdata && \
     pip install -e . &&\
     # Bliss makefile will have used pip cache
