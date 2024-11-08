@@ -6,7 +6,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Update and basic install
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends  tzdata curl wget bzip2 build-essential git libgl1-mesa-glx xvfb libxrender1 && \
+    apt-get install -y --no-install-recommends tzdata curl wget bzip2 build-essential git libgl1-mesa-glx xvfb libxrender1 && \
     apt-get clean autoclean && apt-get autoremove --yes && \
     rm -rf /var/lib/apt/lists/*
 
@@ -23,7 +23,7 @@ WORKDIR /bluesky_blissdata
 
 RUN ["/bin/bash", "-c", ". /opt/conda/etc/profile.d/conda.sh && \
     . /opt/conda/etc/profile.d/mamba.sh && \
-    mamba create -n bluesky_blissdata python=3.10 &&\
+    mamba create -n bluesky_blissdata python=3.9 &&\
     conda config --env --append channels esrf-bcu &&\
     mamba activate  bluesky_blissdata && \
     mamba install blissdata && \

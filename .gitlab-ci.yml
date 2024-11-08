@@ -7,6 +7,7 @@ build-docs:
   stage: build
   image: python
   before_script:
+    - sudo apt-get install libhdf5-dev
     - pip install tox
   script:
     - tox -e docs
