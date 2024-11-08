@@ -6,7 +6,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Update and basic install
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends tzdata curl wget bzip2 build-essential git libgl1-mesa-glx xvfb libxrender1 && \
+    apt-get install -y --no-install-recommends libhdf5-dev tzdata curl wget bzip2 build-essential git libgl1-mesa-glx xvfb libxrender1 && \
     apt-get clean autoclean && apt-get autoremove --yes && \
     rm -rf /var/lib/apt/lists/*
 
