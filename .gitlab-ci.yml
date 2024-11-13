@@ -22,7 +22,7 @@ test-job:
   before_script:
     - apt-get update
     - apt-get install -y libhdf5-dev
-    - pip .
+    - pip install .
   services:
     - name: redis:latest
       alias: redis
