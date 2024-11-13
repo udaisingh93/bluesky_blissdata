@@ -9,7 +9,6 @@ build-docs:
   before_script:
     - apt-get update
     - apt-get install -y libhdf5-dev
-    - pip install --no-binary=h5py h5py
     - pip install tox
   script:
     - tox -e docs
@@ -20,16 +19,19 @@ build-docs:
 test-job:
   stage: test
   image: python
+  before_script:
+    - apt-get update
+    - apt-get install -y libhdf5-dev
+    - pip .
   services:
     - name: redis:latest
       alias: redis
   variables:
     redis_host: redis
     redis_port: 6379
-  before_script:
-    - pip install .
   script:
     - pytest tests
+
 build-job:       # This job runs in the build stage, which runs first.
   stage: deploy
   image:
