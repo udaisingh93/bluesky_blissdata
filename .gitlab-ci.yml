@@ -23,6 +23,7 @@ test-job:
     - apt-get update
     - apt-get install -y libhdf5-dev
     - pip install .
+    - pip install pytest
   services:
     - name: redis:latest
       alias: redis

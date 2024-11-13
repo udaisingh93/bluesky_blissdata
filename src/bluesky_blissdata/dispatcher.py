@@ -35,7 +35,7 @@ class BlissdataDispatcher:
     acq_chain: Dict[str, ChainDict] = {}
     channels: Dict[str, ChannelDict] = {}
 
-    def __init__(self, host: str = "localhost", port: int = 6380) -> None:
+    def __init__(self, host: str = "localhost", port: int = 6379) -> None:
         _logger.info("Connecting to redis server")
         exception_handler = ExceptionHandler("Error in connecting to redis server")
         try:
