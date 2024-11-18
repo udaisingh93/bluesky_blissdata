@@ -50,10 +50,17 @@ build-job:       # This job runs in the build stage, which runs first.
       --destination "${CI_REGISTRY_IMAGE}:${VERSION}"
       --destination "${CI_REGISTRY_IMAGE}:${SHORT_SHA}"
 
+deploy:
+  stage: deploy
+  image:
+    name: gcr.io/kaniko-project/executor:v1.14.0-debug
+    entrypoint: [ "" ]
+  script:
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/docker/Dockerfile"
       --destination "${LATEST_TAG}"
+
 pages:
   stage: deploy
   image: python
