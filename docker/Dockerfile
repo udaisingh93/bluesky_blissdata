@@ -11,9 +11,9 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Clone repos
-WORKDIR /
+WORKDIR /bluesky_blissdata
 
-RUN git clone https://gitlab.desy.de/fs-ec/bluesky_blissdata.git
+COPY . /bluesky_blissdata
     
 # Setup environment
 RUN conda config --append channels esrf-bcu && \

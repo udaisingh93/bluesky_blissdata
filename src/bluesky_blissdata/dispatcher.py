@@ -7,6 +7,7 @@ from blissdata.redis_engine.store import DataStore
 from blissdata.redis_engine.encoding.numeric import NumericStreamEncoder
 from blissdata.schemas.scan_info import DeviceDict, ChainDict, ChannelDict
 from blissdata.scan import Scan
+import event_model
 
 _logger = logging.getLogger(__name__)
 
@@ -58,13 +59,26 @@ class BlissdataDispatcher:
         }
 
         if name == "start":
+            _logger.debug("Validating start document.")
+            event_model.schema_validators[event_model.DocumentNames.start].validate(doc)
+            _logger.debug("Start document validated. Preparing scan.")
             self.prepare_scan(doc)
         elif name == "descriptor":
+            _logger.debug("Validating descriptor document.")
+            event_model.schema_validators[event_model.DocumentNames.descriptor].validate(doc)
+            _logger.debug("Descriptor document validated. Configuring datastream.")
             self.config_datastream(doc)
         elif name == "event":
+            _logger.debug("Validating event document.")
+            event_model.schema_validators[event_model.DocumentNames.event].validate(doc)
+            _logger.debug("Event document validated. Pushing data to datastream.")
             self.push_datastream(doc)
         elif name == "stop":
+            _logger.debug("Validating stop document.")
+            event_model.schema_validators[event_model.DocumentNames.stop].validate(doc)
+            _logger.debug("Stop document validated. Stopping datastream.")
             self.stop_datastream(doc)
+
 
     def prepare_scan(self, doc: Dict[str, Any]) -> None:
         self.scan_id["name"] = doc.get("plan_name", self.scan_id.get("name", ""))
@@ -148,7 +162,7 @@ class BlissdataDispatcher:
             scalar_stream = self.scan.create_stream(
                 elem["label"],
                 encoder,
-                info={"unit": unit, "shape": [], "dtype": "float64", "group": "scatter"},
+                {"unit": unit, "shape": [], "dtype": "float64", "group": "scatter"},
             )
             ddesc_dict[elem["label"]] = dict(elem)
             self.stream_list[elem["label"]] = scalar_stream
