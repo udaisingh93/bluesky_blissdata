@@ -60,6 +60,8 @@ deploy:
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/docker/Dockerfile"
       --destination "${LATEST_TAG}"
+  only:
+    - main
 
 pages:
   stage: deploy
