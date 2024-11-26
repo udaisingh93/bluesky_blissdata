@@ -26,7 +26,7 @@ RUN ["/bin/bash", "-c", ". /opt/conda/etc/profile.d/conda.sh && \
     mamba create -n bluesky_blissdata python=3.9 &&\
     conda config --env --append channels esrf-bcu &&\
     mamba activate  bluesky_blissdata && \
-    mamba install blissdata && \
+    mamba install 'blissdata<2.0' && \
     pip install -e . && \
     rm -rf /root/.cache/pip && \
     find /opt/conda/ -follow -type f -name '*.a' -delete && \
