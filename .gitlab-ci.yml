@@ -60,7 +60,7 @@ deploy:
       --dockerfile "${CI_PROJECT_DIR}/docker/Dockerfile"
       --destination "${LATEST_TAG}"
   only:
-    - main
+    - master
 
 pages:
   stage: deploy
