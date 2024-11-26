@@ -11,9 +11,9 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Clone repos
-WORKDIR /
+WORKDIR /bluesky_blissdata
 
-RUN git clone https://gitlab.desy.de/fs-ec/bluesky_blissdata.git
+COPY . /bluesky_blissdata
     
 # Setup environment
 RUN conda config --append channels esrf-bcu && \
@@ -26,11 +26,9 @@ RUN ["/bin/bash", "-c", ". /opt/conda/etc/profile.d/conda.sh && \
     mamba create -n bluesky_blissdata python=3.9 &&\
     conda config --env --append channels esrf-bcu &&\
     mamba activate  bluesky_blissdata && \
-    mamba install blissdata && \
-    pip install -e . &&\
-    # Bliss makefile will have used pip cache
+    mamba install 'blissdata=1.0.1' && \
+    pip install -e . && \
     rm -rf /root/.cache/pip && \
-    # https://jcristharif.com/conda-docker-tips.html
     find /opt/conda/ -follow -type f -name '*.a' -delete && \
     find /opt/conda/ -follow -type f -name '*.pyc' -delete && \
     find /opt/conda/ -follow -type f -name '*.js.map' -delete"]

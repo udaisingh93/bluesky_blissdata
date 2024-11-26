@@ -1,18 +1,42 @@
 stages:          # List of stages for jobs, and their order of execution
   - build
-  - test
   - deploy
+
+variables:
+  LATEST_TAG: $CI_REGISTRY_IMAGE:latest
+  VERSION: $CI_COMMIT_REF_NAME
+  SHORT_SHA: $CI_COMMIT_SHORT_SHA
 
 build-docs:
   stage: build
   image: python
   before_script:
+    - apt-get update
+    - apt-get install -y libhdf5-dev
     - pip install tox
   script:
     - tox -e docs
   artifacts:
-    paths: 
+    paths:
       - docs
+
+#test-job:
+#  stage: test
+#  image: python
+#  before_script:
+#    - apt-get update
+#    - apt-get install -y libhdf5-dev
+#    - pip install .
+#    - pip install pytest pytest-cov
+#  services:
+#    - name: redis:latest
+#      alias: redis
+#  variables:
+#    redis_host: redis
+#    redis_port: 6379
+#  script:
+#    - pytest tests
+
 build-job:       # This job runs in the build stage, which runs first.
   stage: deploy
   image:
@@ -22,7 +46,22 @@ build-job:       # This job runs in the build stage, which runs first.
     - /kaniko/executor
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/docker/Dockerfile"
-      --destination "${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}"
+      --destination "${CI_REGISTRY_IMAGE}:${VERSION}"
+      --destination "${CI_REGISTRY_IMAGE}:${SHORT_SHA}"
+
+deploy:
+  stage: deploy
+  image:
+    name: gcr.io/kaniko-project/executor:v1.14.0-debug
+    entrypoint: [ "" ]
+  script:
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/docker/Dockerfile"
+      --destination "${LATEST_TAG}"
+  only:
+    - main
+
 pages:
   stage: deploy
   image: python
