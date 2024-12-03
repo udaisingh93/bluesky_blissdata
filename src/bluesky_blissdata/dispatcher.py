@@ -276,30 +276,49 @@ class BlissdataDispatcher:
         }
 
         axes = []
-        if self.motors is not None:
-            elem = ddesc_dict[self.motors[0]]
-        else:
-            elem = ddesc_dict["time"]
-        plot_type = elem.get("plot_type", 0)
-        plot_axes = elem.get("plot_axes", [])
+        scan_info["plots"].append({"kind": "curve-plot"})
+        for elem in ddesc_dict.items():
+            try:
+                plot_type = elem[1].get("plot_type", 0)
+                plot_axes = elem[1].get("plot_axes", [])
+                name = elem[1].get("label", "")
+                axes = []
+                if plot_type == 1:
+                    for axis in plot_axes:
+                        if "<idx>" in axis:
+                            axis = "#Pt No"
+                        axes.append({"kind": "curve", "x": axis, "y": name})
+                    scan_info["plots"].append(
+                        {"kind": "curve-plot", "name": name, "items": axes})
+                elif plot_type == 2:
+                    self.info("Image plot not implemented yet")
+            except IndexError:
+                continue
 
-        if plot_type == 1:
-            for axis in plot_axes:
-                if elem["name"] != axis:
-                    axes.append({"kind": "curve", "x": axis, "y": elem["name"]})
-        elif plot_type == 2:
-            for axis in plot_axes:
-                if elem["name"] != axis:
-                    axes.append({"kind": "scatter", "x": axis, "y": elem["name"]})
-        elif plot_type == 3:
-            _logger.info("Image plot not implemented yet")
+        # if self.motors is not None:
+        #     elem = ddesc_dict[self.motors[0]]
+        # else:
+        #     elem = ddesc_dict["time"]
+        # plot_type = elem.get("plot_type", 0)
+        # plot_axes = elem.get("plot_axes", [])
 
-        if "grid" in scan_info["name"].lower():
-            scan_info["plots"].append(
-                {"kind": "scatter-plot", "name": "Scatter", "items": axes}
-            )
-        else:
-            scan_info["plots"].append(
-                {"kind": "curve-plot", "name": "Curve", "items": axes}
-            )
+        # if plot_type == 1:
+        #     for axis in plot_axes:
+        #         if elem["name"] != axis:
+        #             axes.append({"kind": "curve", "x": axis, "y": elem["name"]})
+        # elif plot_type == 2:
+        #     for axis in plot_axes:
+        #         if elem["name"] != axis:
+        #             axes.append({"kind": "scatter", "x": axis, "y": elem["name"]})
+        # elif plot_type == 3:
+        #     _logger.info("Image plot not implemented yet")
+
+        # if "grid" in scan_info["name"].lower():
+        #     scan_info["plots"].append(
+        #         {"kind": "scatter-plot", "name": "Scatter", "items": axes}
+        #     )
+        # else:
+        #     scan_info["plots"].append(
+        #         {"kind": "curve-plot", "name": "Curve", "items": axes}
+        #     )
         return scan_info
