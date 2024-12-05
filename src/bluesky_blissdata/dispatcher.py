@@ -35,6 +35,7 @@ class BlissdataDispatcher:
     stream_list: Dict[str, Any] = {}
     acq_chain: Dict[str, ChainDict] = {}
     channels: Dict[str, ChannelDict] = {}
+    catalog_data: Dict[str, Any] = {}
 
     def __init__(self, host: str = "localhost", port: int = 6379) -> None:
         _logger.info("Connecting to redis server")
@@ -85,6 +86,7 @@ class BlissdataDispatcher:
         self.scan_id["number"] = doc.get("scan_id", self.scan_id.get("number", 0))
         self.scan_id["data_policy"] = doc.get("data_policy", self.scan_id.get("data_policy", ""))
         self.uid = doc.get("uid")
+        self.catalog_data = doc.get('meta_catalog', {})
         _logger.info(f"Sending new scan data with uid {self.uid}")
         _logger.debug(f"prepare scan doc data {doc}")
         self.scan = self._data_store.create_scan(
@@ -259,6 +261,7 @@ class BlissdataDispatcher:
             "name": self.scan.info.get("name"),
             "scan_nb": self.scan.number,
             "session_name": self.scan.session,
+            "catalog_data": self.catalog_data,
             "data_policy": self.scan.data_policy,
             "start_time": self.start_time,
             "type": self.scan.info.get('name'),
