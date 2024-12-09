@@ -97,7 +97,7 @@ class BlissdataDispatcher:
         self.motors = doc.get("motors")
         dt = datetime.datetime.fromtimestamp(doc["time"])
         self.start_time = dt.isoformat()
-        self.npoints = doc.get("num_points", 0)
+        self.npoints = doc.get("num_points", 1000)
         self.count_time = 1
         self.start = []
         self.stop = []
