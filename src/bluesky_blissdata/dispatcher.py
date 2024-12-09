@@ -228,7 +228,8 @@ class BlissdataDispatcher:
             except KeyError as e:
                 exception_handler(e)
                 continue
-            ch_stream.send(data[k])
+            if np.issubdtype(ch_stream.info['dtype'],type(data[k])):
+                ch_stream.send(data[k])
 
         try:
             ch_stream = self.stream_list["time"]
