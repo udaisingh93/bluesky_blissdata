@@ -141,7 +141,9 @@ class BlissdataDispatcher:
                 elem["dtype"] = np.int64
             elif dtype == "array":
                 numpy_dtype = dev.get('numpy_dtype')
-                if numpy_dtype == "number":
+                if numpy_dtype is None:
+                    elem["dtype"] = dict
+                else:
                     elem["dtype"] = numpy_dtype
             else:
                 elem["dtype"] = dict
