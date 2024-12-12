@@ -133,7 +133,16 @@ class BlissdataDispatcher:
             elem["label"] = dev
             dev = doc["data_keys"][dev]
             elem["name"] = dev.get("object_name")
-            elem["dtype"] = np.float64
+            dtype = dev.get('dtype')
+            if dtype == "number":
+                elem["dtype"] = np.float64
+            elif dtype == "integer":
+                elem["dtype"] = np.int64
+            elif dtype == "array":
+                numpy_dtype = dev.get('numpy_dtype')
+                if numpy_dtype == "number":
+                    elem["dtype"] = numpy_dtype
+                
             elem["shape"] = dev.get("shape", [])
             elem["precision"] = dev.get("precision", 4)
 
