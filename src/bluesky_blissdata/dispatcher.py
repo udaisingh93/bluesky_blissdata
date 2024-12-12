@@ -5,6 +5,7 @@ import datetime
 from typing import Dict, List, Optional, Any
 from blissdata.redis_engine.store import DataStore
 from blissdata.redis_engine.encoding.numeric import NumericStreamEncoder
+from blissdata.redis_engine.encoding.json import JsonStreamEncoder , 
 from blissdata.schemas.scan_info import DeviceDict, ChainDict, ChannelDict
 from blissdata.scan import Scan
 import event_model
@@ -142,6 +143,8 @@ class BlissdataDispatcher:
                 numpy_dtype = dev.get('numpy_dtype')
                 if numpy_dtype == "number":
                     elem["dtype"] = numpy_dtype
+            else:
+                elem["dtype"] = dict
                 
             elem["shape"] = dev.get("shape", [])
             elem["precision"] = dev.get("precision", 4)
@@ -169,11 +172,14 @@ class BlissdataDispatcher:
                 display_name=elem["label"],
                 group="scatter",
             )
-            encoder = NumericStreamEncoder(dtype=np.float64, shape=elem["shape"])
+            if elem['dtype'] == dict:
+                encoder = JsonStreamEncoder()
+            else:
+                encoder = NumericStreamEncoder(dtype=elem['dtype'], shape=elem["shape"])
             scalar_stream = self.scan.create_stream(
                 elem["label"],
                 encoder,
-                {"unit": unit, "shape": [], "dtype": "float64", "group": "scatter"},
+                {"unit": unit, "shape": [], "dtype": elem['dtype'], "group": "scatter"},
             )
             ddesc_dict[elem["label"]] = dict(elem)
             self.stream_list[elem["label"]] = scalar_stream
