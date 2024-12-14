@@ -57,3 +57,4 @@ MANIFEST
 venv/
 
 .ipynb_checkpoints/
+micromamba.tar.bz2

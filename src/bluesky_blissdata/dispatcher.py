@@ -5,7 +5,7 @@ import datetime
 from typing import Dict, List, Optional, Any
 from blissdata.redis_engine.store import DataStore
 from blissdata.redis_engine.encoding.numeric import NumericStreamEncoder
-from blissdata.redis_engine.encoding.json import JsonStreamEncoder , 
+from blissdata.redis_engine.encoding.json import JsonStreamEncoder
 from blissdata.schemas.scan_info import DeviceDict, ChainDict, ChannelDict
 from blissdata.scan import Scan
 import event_model
@@ -255,25 +255,24 @@ class BlissdataDispatcher:
         ch_stream.send(doc["time"])
 
     def stop_datastream(self, doc: Dict[str, Any]) -> None:
-        _logger.debug(f"stopping doc data {doc}")
+        _logger.debug("Stopping datastream.")
         exception_handler = ExceptionHandler("Error sealing stream")
+        
         for stream in self.stream_list.values():
             try:
                 stream.seal()
             except Exception as e:
                 exception_handler(e)
-                continue
 
         self.scan.stop()
-        dt = datetime.datetime.fromtimestamp(doc["time"])
-        self.scan.info["end_time"] = dt.isoformat()
-        self.scan.info["exit_status"] = doc["exit_status"]
-        if doc["exit_status"] == "success":
-            self.scan.info["end_reason"] = "SUCCESS"
-        self.scan.info["num_events"] = doc["num_events"]
-        self.scan.info["reason"] = doc["reason"]
+        self.scan.info.update({
+            "end_time": datetime.datetime.fromtimestamp(doc["time"]).isoformat(),
+            "exit_status": doc["exit_status"],
+            "end_reason": "SUCCESS" if doc["exit_status"] == "success" else "ERROR",
+            "num_events": doc["num_events"],
+            "reason": doc["reason"]
+        })
         self.scan.close()
-
     def scan_info(self, ddesc_dict: Dict[str, Any]) -> Dict[str, Any]:
         scan_info = {
             "name": self.scan.info.get("name"),
