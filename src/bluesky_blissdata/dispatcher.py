@@ -12,6 +12,7 @@ import event_model
 
 _logger = logging.getLogger(__name__)
 
+
 class ExceptionHandler:
     def __init__(self, msg: str) -> None:
         self.msg = msg
@@ -19,6 +20,7 @@ class ExceptionHandler:
     def __call__(self, e: Exception) -> None:
         _logger.error(f"{self.msg}: {e}")
         raise RuntimeError(f"{self.msg}: {e}") from e
+
 
 class BlissdataDispatcher:
     _data_store: DataStore
@@ -67,25 +69,26 @@ class BlissdataDispatcher:
             self.prepare_scan(doc)
         elif name == "descriptor":
             _logger.debug("Validating descriptor document.")
-            event_model.schema_validators[event_model.DocumentNames.descriptor].validate(doc)
+            event_model.schema_validators[event_model.DocumentNames.descriptor].validate(
+                doc)
             _logger.debug("Descriptor document validated. Configuring datastream.")
             self.config_datastream(doc)
         elif name == "event":
             _logger.debug("Validating event document.")
             event_model.schema_validators[event_model.DocumentNames.event].validate(doc)
             _logger.debug("Event document validated. Pushing data to datastream.")
-            self.push_datastream(doc)
+            self._push_datastream(doc)
         elif name == "stop":
             _logger.debug("Validating stop document.")
             event_model.schema_validators[event_model.DocumentNames.stop].validate(doc)
             _logger.debug("Stop document validated. Stopping datastream.")
-            self.stop_datastream(doc)
-
+            self._stop_datastream(doc)
 
     def prepare_scan(self, doc: Dict[str, Any]) -> None:
         self.scan_id["name"] = doc.get("plan_name", self.scan_id.get("name", ""))
         self.scan_id["number"] = doc.get("scan_id", self.scan_id.get("number", 0))
-        self.scan_id["data_policy"] = doc.get("data_policy", self.scan_id.get("data_policy", ""))
+        self.scan_id["data_policy"] = doc.get(
+            "data_policy", self.scan_id.get("data_policy", ""))
         self.uid = doc.get("uid")
         self.catalog_data = doc.get('meta_catalog', {})
         _logger.info(f"Sending new scan data with uid {self.uid}")
@@ -147,7 +150,7 @@ class BlissdataDispatcher:
                     elem["dtype"] = numpy_dtype
             else:
                 elem["dtype"] = dict
-                
+
             elem["shape"] = dev.get("shape", [])
             elem["precision"] = dev.get("precision", 4)
 
@@ -232,11 +235,30 @@ class BlissdataDispatcher:
         self.scan.info.update(scan_info)
         self.scan.prepare()
         self.scan.start()
-    def push_datastream(self, doc: Dict[str, Any]) -> None:
+
+    def _push_datastream(self, doc: Dict[str, Any]) -> None:
+        """ Pushes data to Redis streams as specified in the given document.
+
+            This method iterates over the 'data' in the document and sends the values 
+            to their corresponding Redis streams. The dtype of each stream is validated 
+            against the data type of the value being pushed. If a mismatch is found, 
+            a TypeError is raised. If a stream is not found, a KeyError is logged.
+
+        Args:
+            doc (Dict[str, Any]): A dictionary containing the data to be pushed to Redis. 
+                               It must contain a 'data' key with stream names as keys 
+                               and corresponding values to be sent to those streams. 
+                               It should also contain a 'time' key to be sent to the 
+                               'time' stream.
+
+        Raises:
+            KeyError: If a specified stream is not found in the stream list.
+            TypeError: If the dtype of the value does not match the expected dtype of the stream.
+        """
         _logger.debug(f"Pushing data to Redis for {self.uid}")
         data = doc.get("data", {})
         exception_handler = ExceptionHandler("Error pushing data to Redis")
-    
+
         for k, value in data.items():
             try:
                 ch_stream = self.stream_list[k]
@@ -244,9 +266,11 @@ class BlissdataDispatcher:
                 if np.issubdtype(ch_stream.info['dtype'], type(value)):
                     ch_stream.send(value)
                 else:
-                    raise TypeError(f"Data type mismatch: expected {ch_stream.info['dtype']} but got {type(value)}")
+                    raise TypeError(
+                        f"Data type mismatch: expected {ch_stream.info['dtype']} but got {type(value)}")
             except KeyError:
-                exception_handler(KeyError(f"Stream {k} not found, expected dtype: {ch_stream.info['dtype']}"))
+                exception_handler(
+                    KeyError(f"Stream {k} not found, expected dtype: {ch_stream.info['dtype']}"))
             except TypeError as e:
                 exception_handler(e)
 
@@ -257,11 +281,29 @@ class BlissdataDispatcher:
         except TypeError as e:
             exception_handler(e)
 
+    def _stop_datastream(self, doc: Dict[str, Any]) -> None:
+        """
+    Stops the datastream, seals all streams, and updates the scan information.
 
-    def stop_datastream(self, doc: Dict[str, Any]) -> None:
+    This method seals all active streams in the `stream_list` by calling their
+    `seal()` method and stops the associated scan. It updates the scan's 
+    information based on the `doc` provided, including the end time, exit status,
+    number of events, and the reason for stopping the scan. The scan is then closed.
+
+    Args:
+        doc (Dict[str, Any]): A dictionary containing information about the scan 
+                               stop event. It must include:
+                               - 'time' (timestamp for the end of the scan),
+                               - 'exit_status' (status of the scan, typically 'success' or 'failure'),
+                               - 'num_events' (number of events during the scan),
+                               - 'reason' (reason for the scan's stop).
+
+    Raises:
+        Exception: If an error occurs while sealing the streams or stopping the scan.
+    """
         _logger.debug("Stopping datastream.")
         exception_handler = ExceptionHandler("Error sealing stream")
-        
+
         for stream in self.stream_list.values():
             try:
                 stream.seal()
@@ -277,6 +319,7 @@ class BlissdataDispatcher:
             "reason": doc["reason"]
         })
         self.scan.close()
+
     def scan_info(self, ddesc_dict: Dict[str, Any]) -> Dict[str, Any]:
         scan_info = {
             "name": self.scan.info.get("name"),
