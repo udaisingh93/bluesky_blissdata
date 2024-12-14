@@ -232,27 +232,31 @@ class BlissdataDispatcher:
         self.scan.info.update(scan_info)
         self.scan.prepare()
         self.scan.start()
-
     def push_datastream(self, doc: Dict[str, Any]) -> None:
-        _logger.debug(f"pushing data to redis server for {self.uid}")
-        _logger.debug(f"event doc data {doc}")
-        data = doc.get("data")
-        exception_handler = ExceptionHandler("Error pushing data to redis server")
-        ch_stream = None
-        for k in data.keys():
+        _logger.debug(f"Pushing data to Redis for {self.uid}")
+        data = doc.get("data", {})
+        exception_handler = ExceptionHandler("Error pushing data to Redis")
+    
+        for k, value in data.items():
             try:
                 ch_stream = self.stream_list[k]
-            except KeyError as e:
+            # Check if the dtype matches
+                if np.issubdtype(ch_stream.info['dtype'], type(value)):
+                    ch_stream.send(value)
+                else:
+                    raise TypeError(f"Data type mismatch: expected {ch_stream.info['dtype']} but got {type(value)}")
+            except KeyError:
+                exception_handler(KeyError(f"Stream {k} not found, expected dtype: {ch_stream.info['dtype']}"))
+            except TypeError as e:
                 exception_handler(e)
-                continue
-            if np.issubdtype(ch_stream.info['dtype'],type(data[k])):
-                ch_stream.send(data[k])
 
         try:
-            ch_stream = self.stream_list["time"]
-        except KeyError as e:
+            self.stream_list["time"].send(doc["time"])
+        except KeyError:
+            exception_handler(KeyError("Stream 'time' not found"))
+        except TypeError as e:
             exception_handler(e)
-        ch_stream.send(doc["time"])
+
 
     def stop_datastream(self, doc: Dict[str, Any]) -> None:
         _logger.debug("Stopping datastream.")
