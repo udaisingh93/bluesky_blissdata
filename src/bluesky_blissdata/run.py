@@ -85,7 +85,7 @@ def parse_args(args):
         dest="redis_host",
         default="localhost",
         help="redis host for bliss data",
-        )
+    )
 
     parser.add_argument(
         "--redis-port",
