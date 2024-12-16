@@ -8,6 +8,7 @@ variables:
   VERSION: $CI_COMMIT_REF_NAME
   SHORT_SHA: $CI_COMMIT_SHORT_SHA
 lint:
+  stage: lint
   image: python:3.9
   before_script:
     - pip install tox
