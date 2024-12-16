@@ -1,23 +1,43 @@
 """
-This is a skeleton file that can serve as a starting point for a Python
-console script. To run this script uncomment the following lines in the
-``[options.entry_points]`` section in ``setup.cfg``::
+Bluesky Blissdata Interface
 
-    console_scripts =
-         fibonacci = bluesky_blissdata.skeleton:run
+This script serves as a command-line interface (CLI) for connecting a Bluesky-based data acquisition system with a Redis server. It enables seamless data streaming by managing Redis and ZMQ connections and integrating with the BlissdataDispatcher class for scan lifecycle management.
 
-Then run ``pip install .`` (or ``pip install -e .`` for editable mode)
-which will install the command ``fibonacci`` inside your current environment.
+Key Features:
+    - Initializes connections to Redis and ZMQ servers for data handling.
+    - Integrates with Bluesky's RemoteDispatcher for data streaming.
+    - Utilizes BlissdataDispatcher to handle scan documents and manage data flow to Redis streams.
 
-Besides console scripts, the header (i.e. until ``_logger``...) of this file can
-also be used as template for Python modules.
+Command-line Arguments:
+    - --version: Displays the version of the bluesky-blissdata package.
+    - --redis-host: Specifies the Redis server host (default: localhost).
+    - --redis-port: Specifies the Redis server port (default: 6379).
+    - --zmq-host: Specifies the ZMQ host for the Bluesky RemoteDispatcher (default: localhost).
+    - --zmq-port: Specifies the ZMQ port for the Bluesky RemoteDispatcher (default: 5578).
+    - -v / --verbose: Sets the logging level to INFO.
+    - -vv / --very-verbose: Sets the logging level to DEBUG.
 
-Note:
-    This file can be renamed depending on your needs or safely removed if not needed.
+Usage Example:
+    To run the script, install it via pip:
+        pip install .
+    
+    Then execute:
+        fibonacci
 
-References:
-    - https://setuptools.pypa.io/en/latest/userguide/entry_point.html
-    - https://pip.pypa.io/en/stable/reference/pip_install
+    The script will:
+        1. Parse command-line arguments.
+        2. Set up logging.
+        3. Initialize connections to the Redis and ZMQ servers.
+        4. Start listening for scan documents and push data to Redis streams using the BlissdataDispatcher.
+
+Dependencies:
+    - Bluesky
+    - ZMQ
+    - Redis
+    - Logging
+
+Author: Udai Singh
+License: MIT
 """
 
 import argparse
@@ -33,19 +53,6 @@ __license__ = "MIT"
 
 _logger = logging.getLogger(__name__)
 
-
-# ---- Python API ----
-# The functions defined in this section can be imported by users in their
-# Python scripts/interactive interpreter, e.g. via
-# `from bluesky_blissdata.skeleton import fib`,
-# when using this Python module as a library.
-
-
-# ---- CLI ----
-# The functions defined in this section are wrappers around the main Python
-# API allowing them to be called directly from the terminal as a CLI
-# executable/script.
-
 def parse_args(args):
     """ Parse command line parameters
 
@@ -56,7 +63,7 @@ def parse_args(args):
     Returns:
         :obj:`argparse.Namespace`: command line parameters namespace
     """
-    parser = argparse.ArgumentParser(description="Blusesky blissdata interface")
+    parser = argparse.ArgumentParser(description="Bluesky blissdata interface")
 
     parser.add_argument(
         "--version",
@@ -135,6 +142,15 @@ def setup_logging(loglevel):
 
 
 def main() -> None:
+    """Main entry point for the script
+
+    This function parses command-line arguments, sets up logging, initializes the
+    Redis and ZMQ connections, and starts listening for scan documents. It integrates
+    the Bluesky RemoteDispatcher and BlissdataDispatcher to push scan data to Redis streams.
+
+    Returns:
+        None
+    """
     args = parse_args(sys.argv[1:])
     setup_logging(args.loglevel)
 
@@ -142,9 +158,11 @@ def main() -> None:
     _logger.info(f"Connection to redis sever: {args.redis_host}:{args.redis_port}")
     _logger.info(f"Connection to zmq sever: {args.zmq_host}:{args.zmq_port}")
 
+    # Initialize RemoteDispatcher for Bluesky
     d = RemoteDispatcher((args.zmq_host, args.zmq_port))
     post_document = BlissdataDispatcher(args.redis_host, args.redis_port)
 
+    # Subscribe the BlissdataDispatcher to the RemoteDispatcher
     d.subscribe(post_document)
     d.start()
 

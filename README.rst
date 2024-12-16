@@ -40,3 +40,9 @@ Blissdata is a Python library developed by the European Synchrotron Radiation Fa
 Streaming and a h5py-like API for transparently fetching data from memory or saved files. for clients, such as data processing and visualization.
 
 Launching Blissdata within Bluesky enables Bluesky to use ESRF tools and to improve interoperability and collaboration within the synchrotron community.
+
+Documentation:
+--------------
+For more detailed documentation, visit:
+
+    `https://fs-ec.pages.desy.de/bluesky_blissdata/`

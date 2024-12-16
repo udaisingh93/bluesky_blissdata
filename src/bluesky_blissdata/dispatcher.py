@@ -2,11 +2,12 @@
 """
 BlissdataDispatcher Module
 
-This module defines the `BlissdataDispatcher` class, which manages the lifecycle 
-of a scan and interacts with a Redis server to handle data streaming. The dispatcher 
-class is responsible for handling the four major document types (start, descriptor, 
-event, and stop) in a scan and ensuring that data is properly pushed to Redis streams. 
-It also manages the configuration of devices, channels, and the overall acquisition chain.
+This module defines the `BlissdataDispatcher` class, which manages the lifecycle
+of a scan and interacts with a Redis server to handle data streaming. The dispatcher
+class is responsible for handling the four major document types (start, descriptor,
+event, and stop) in a scan and ensuring that data is properly pushed to Redis streams.
+It also manages the configuration of devices, channels, and the overall acquisition
+chain.
 
 Key Features:
 - Connects to a Redis server to store scan data and push streaming data.
@@ -15,26 +16,26 @@ Key Features:
 - Handles the sealing of streams and updating of scan status upon completion.
 
 Classes:
-    - ExceptionHandler: A helper class to handle exceptions with appropriate error messages.
-    - BlissdataDispatcher: A dispatcher for managing the lifecycle of a scan, pushing data 
-      to streams, and configuring data streams on a Redis server.
+    - ExceptionHandler: helper class to handle exceptions with appropriate error
+      messages.
+    - BlissdataDispatcher: A dispatcher for managing the lifecycle of a scan,
+      pushing data to streams, and configuring data streams on a Redis server.
 
 BlissdataDispatcher Class:
-    This class is responsible for managing a scan, validating incoming documents, 
+    This class is responsible for managing a scan, validating incoming documents,
     and interacting with Redis data streams. It processes four types of documents:
     1. "start": Initializes the scan and prepares it for data streaming.
     2. "descriptor": Configures data streams and associates them with the scan.
     3. "event": Pushes data to the configured data streams.
-    4. "stop": Stops the scan, seals the data streams, and finalizes the scan information.
+    4. "stop": Stops the scan, seals the data streams.
 
     Methods:
         - __init__(self, host: str = "localhost", port: int = 6379) -> None:
-          Initializes the dispatcher, connecting to the Redis server and preparing for scan data.
+          Initializes the dispatcher, connecting to the Redis server and preparing for
+          scan data.
 
         - __call__(self, name: str, doc: Dict[str, Any]) -> None:
-          Handles the incoming documents (start, descriptor, event, stop) and dispatches them 
-          to the appropriate method for processing.
-
+          Handles the incoming documents (start, descriptor, event, stop) calls.
         - prepare_scan(self, doc: Dict[str, Any]) -> None:
           Initializes the scan parameters and prepares the scan metadata.
 
@@ -46,21 +47,21 @@ BlissdataDispatcher Class:
           Pushes the data from the event document to the corresponding Redis streams.
 
         - _stop_datastream(self, doc: Dict[str, Any]) -> None:
-          Seals all streams, stops the scan, and updates the scan information upon completion.
+          Seals all streams, stops the scan, and updates the scan information upon
+          completion.
 
         - _scan_info(self, ddesc_dict: Dict[str, Any]) -> Dict[str, Any]:
-          Generates the scan metadata, including the acquisition chain, devices, channels, 
-          and plot configurations, to be stored in the scan's info.
+          Generates the scan metadata, including the acquisition chain, devices,
+          channels, and plot configurations, to be stored in the scan's info.
 
     Exceptions:
-        - ExceptionHandler: Custom exception handler. 
+        - ExceptionHandler: Custom exception handler.
     """
 
 import logging
 import datetime
 from typing import Any, Dict, Optional, List
 import numpy as np
-from dataclasses import dataclass
 from blissdata.redis_engine.store import DataStore
 from blissdata.redis_engine.encoding.numeric import NumericStreamEncoder
 from blissdata.redis_engine.encoding.json import JsonStreamEncoder
@@ -73,18 +74,17 @@ _logger = logging.getLogger(__name__)
 
 class ExceptionHandler:
     """
-    A class to handle exceptions by logging the error message and raising a RuntimeError.
-
-    This class is used to log errors with a custom message and re-raise them as a
-    RuntimeError to ensure proper exception handling in the application flow.
-
+    A class to handle exceptions by logging the error message and raising a 
+    RuntimeError.
     Attributes:
         msg (str): The custom message that will be logged when an exception occurs.
 
     Methods:
         __call__(self, e: Exception) -> None:
-            Handles an exception by logging the provided error message and re-raising it as a RuntimeError.
+            Handles an exception by logging the provided error message and re-raising 
+            it as a RuntimeError.
     """
+
     def __init__(self, msg: str) -> None:
         """
         Initializes the ExceptionHandler with a custom message.
@@ -105,7 +105,8 @@ class ExceptionHandler:
             e (Exception): The exception to be handled.
 
         Raises:
-            RuntimeError: A new RuntimeError is raised with the custom message and the original exception.
+            RuntimeError: A new RuntimeError is raised with the custom message and the 
+            original exception.
         """
         _logger.error("%s: %s", self.msg, e)
         raise RuntimeError(f"{self.msg}: {e}") from e
@@ -228,9 +229,9 @@ class BlissdataDispatcher:
             elem["name"] = dev.get("object_name")
             dtype = dev.get("dtype")
             if dtype == "number":
-                elem["dtype"] = np.float64
+                elem["dtype"] = 'float64'
             elif dtype == "integer":
-                elem["dtype"] = np.int64
+                elem["dtype"] = 'int64'
             elif dtype == "array":
                 numpy_dtype = dev.get("numpy_dtype")
                 if numpy_dtype is None:
@@ -277,10 +278,9 @@ class BlissdataDispatcher:
             )
             ddesc_dict[elem["label"]] = dict(elem)
             self.stream_list[elem["label"]] = scalar_stream
-        print(ddesc_dict)
         elem["name"] = "timer"
         elem["label"] = "time"
-        elem["dtype"] = np.float64
+        elem["dtype"] = "float64"
         elem["shape"] = []
         elem["precision"] = 4
         unit = "s"
@@ -290,12 +290,11 @@ class BlissdataDispatcher:
             device=device_type, dim=len(elem["shape"]), display_name=elem["name"]
         )
 
-        encoder = NumericStreamEncoder(dtype=np.float64, shape=elem["shape"])
+        encoder = NumericStreamEncoder(dtype="float64", shape=elem["shape"])
         scalar_stream = self.scan.create_stream(
             elem["label"], encoder, info={"unit": unit, "shape": [], "dtype": "float64"}
         )
         ddesc_dict[elem["label"]] = dict(elem)
-        print(ddesc_dict)
         self.stream_list[elem["label"]] = scalar_stream
 
         self.acq_chain["axis"] = ChainDict(
@@ -334,7 +333,7 @@ class BlissdataDispatcher:
             a TypeError is raised. If a stream is not found, a KeyError is logged.
 
         Args:
-            doc (Dict[str, Any]): A dictionary containing the data to be pushed to Redis.
+            doc (Dict[str, Any]): A dict of bluesky doc stream.
                                It must contain a 'data' key with stream names as keys
                                and corresponding values to be sent to those streams.
                                It should also contain a 'time' key to be sent to the
@@ -342,9 +341,10 @@ class BlissdataDispatcher:
 
         Raises:
             KeyError: If a specified stream is not found in the stream list.
-            TypeError: If the dtype of the value does not match the expected dtype of the stream.
+            TypeError: If the dtype of the value does not match the expected dtype of
+            the stream.
         """
-        _logger.debug(f"Pushing data to Redis for {self.uid}")
+        _logger.debug("Pushing data to Redis for %d{self.uid}")
         data = doc.get("data", {})
         exception_handler = ExceptionHandler("Error pushing data to Redis")
 
@@ -416,6 +416,36 @@ class BlissdataDispatcher:
         self.scan.close()
 
     def scan_info(self, ddesc_dict: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate a dictionary containing metadata and plot configuration for a scan.
+
+        Args:
+            ddesc_dict (Dict[str, Any]): Descriptor dictionary for scan.
+
+        Returns:
+            Dict[str, Any]: A dictionary for scan metadata and plot configuration.
+
+            Keys include:
+            - name (str): Name of the scan.
+            - scan_nb (int): Scan number.
+            - session_name (str): Name of the session.
+            - catalog_data (Any): Catalog data associated with the scan.
+            - data_policy (Any): Data policy for the scan.
+            - start_time (Any): Start time of the scan.
+            - type (str): Type of scan, derived from its name.
+            - npoints (int): Number of points in the scan.
+            - count_time (Any): Count time per point.
+            - title (str): Title of the scan, including its name and number.
+            - acquisition_chain (Any): Acquisition chain metadata.
+            - devices (Any): Devices used in the scan.
+            - channels (Any): Channels involved in the scan.
+            - display_extra (dict): Extra display options.
+            - plots (list): List of plot configurations.
+            - start (Any): Start value of the scan range.
+            - stop (Any): Stop value of the scan range.
+            - user_name (str): User name associated with the scan.
+
+        """
         scan_info = {
             "name": self.scan.info.get("name"),
             "scan_nb": self.scan.number,
@@ -436,34 +466,25 @@ class BlissdataDispatcher:
             "stop": self.stop,
             "user_name": "bluesky",
         }
-
-        axes = []
-        scan_info["plots"].append({"kind": "curve-plot"})
-
-        if self.motors is not None:
-            elem = ddesc_dict[self.motors[0]]
-        else:
-            elem = ddesc_dict["time"]
+        elem = ddesc_dict.get(
+            self.motors[0] if self.motors and self.motors[0] is not None else "time", {}
+        )
         plot_type = elem.get("plot_type", 0)
         plot_axes = elem.get("plot_axes", [])
 
-        if plot_type == 1:
-            for axis in plot_axes:
-                if elem["name"] != axis:
-                    axes.append({"kind": "curve", "x": axis, "y": elem["name"]})
-        elif plot_type == 2:
-            for axis in plot_axes:
-                if elem["name"] != axis:
-                    axes.append({"kind": "scatter", "x": axis, "y": elem["name"]})
-        elif plot_type == 3:
-            _logger.info("Image plot not implemented yet")
-
-        if "grid" in scan_info["name"].lower():
-            scan_info["plots"].append(
-                {"kind": "scatter-plot", "name": "Scatter", "items": axes}
+        axes = [
+            {"kind": kind, "x": axis, "y": elem["name"]}
+            for axis in plot_axes
+            if elem["name"] != axis
+            for kind in (
+                "curve" if plot_type == 1 else "scatter" if plot_type == 2 else None,
             )
-        else:
-            scan_info["plots"].append(
-                {"kind": "curve-plot", "name": "Curve", "items": axes}
-            )
+            if kind
+        ]
+        plot_kind = (
+            "scatter-plot" if "grid" in scan_info["name"].lower() else "curve-plot"
+        )
+        scan_info["plots"].append(
+            {"kind": plot_kind, "name": plot_kind.title(), "items": axes}
+        )
         return scan_info
