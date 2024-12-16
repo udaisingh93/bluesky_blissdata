@@ -1,4 +1,5 @@
-stages:          # List of stages for jobs, and their order of execution
+stages:
+  - lint          # List of stages for jobs, and their order of execution
   - build
   - deploy
 
@@ -6,7 +7,11 @@ variables:
   LATEST_TAG: $CI_REGISTRY_IMAGE:latest
   VERSION: $CI_COMMIT_REF_NAME
   SHORT_SHA: $CI_COMMIT_SHORT_SHA
-
+lint:
+  image: python:3.9
+  script:
+    - pip install flake8
+    - flake8 .  # Run flake8 on the entire repository
 build-docs:
   stage: build
   image: python

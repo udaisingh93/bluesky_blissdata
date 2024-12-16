@@ -74,14 +74,14 @@ _logger = logging.getLogger(__name__)
 
 class ExceptionHandler:
     """
-    A class to handle exceptions by logging the error message and raising a 
+    A class to handle exceptions by logging the error message and raising a
     RuntimeError.
     Attributes:
         msg (str): The custom message that will be logged when an exception occurs.
 
     Methods:
         __call__(self, e: Exception) -> None:
-            Handles an exception by logging the provided error message and re-raising 
+            Handles an exception by logging the provided error message and re-raising
             it as a RuntimeError.
     """
 
@@ -105,7 +105,7 @@ class ExceptionHandler:
             e (Exception): The exception to be handled.
 
         Raises:
-            RuntimeError: A new RuntimeError is raised with the custom message and the 
+            RuntimeError: A new RuntimeError is raised with the custom message and the
             original exception.
         """
         _logger.error("%s: %s", self.msg, e)

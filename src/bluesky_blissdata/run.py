@@ -1,26 +1,32 @@
 """
 Bluesky Blissdata Interface
 
-This script serves as a command-line interface (CLI) for connecting a Bluesky-based data acquisition system with a Redis server. It enables seamless data streaming by managing Redis and ZMQ connections and integrating with the BlissdataDispatcher class for scan lifecycle management.
+This script serves as a command-line interface (CLI) for connecting a Bluesky-based data
+acquisition system with a Redis server. It enables seamless data streaming by managing
+Redis and ZMQ connections and integrating with the BlissdataDispatcher class for scan
+lifecycle management.
 
 Key Features:
     - Initializes connections to Redis and ZMQ servers for data handling.
     - Integrates with Bluesky's RemoteDispatcher for data streaming.
-    - Utilizes BlissdataDispatcher to handle scan documents and manage data flow to Redis streams.
+    - Utilizes BlissdataDispatcher to handle scan documents and manage data flow to
+      Redis streams.
 
 Command-line Arguments:
     - --version: Displays the version of the bluesky-blissdata package.
     - --redis-host: Specifies the Redis server host (default: localhost).
     - --redis-port: Specifies the Redis server port (default: 6379).
-    - --zmq-host: Specifies the ZMQ host for the Bluesky RemoteDispatcher (default: localhost).
-    - --zmq-port: Specifies the ZMQ port for the Bluesky RemoteDispatcher (default: 5578).
+    - --zmq-host: Specifies the ZMQ host for the Bluesky RemoteDispatcher
+        (default: localhost).
+    - --zmq-port: Specifies the ZMQ port for the Bluesky RemoteDispatcher
+        (default: 5578).
     - -v / --verbose: Sets the logging level to INFO.
     - -vv / --very-verbose: Sets the logging level to DEBUG.
 
 Usage Example:
     To run the script, install it via pip:
         pip install .
-    
+
     Then execute:
         fibonacci
 
@@ -28,7 +34,8 @@ Usage Example:
         1. Parse command-line arguments.
         2. Set up logging.
         3. Initialize connections to the Redis and ZMQ servers.
-        4. Start listening for scan documents and push data to Redis streams using the BlissdataDispatcher.
+        4. Start listening for scan documents and push data to Redis streams using the
+           BlissdataDispatcher.
 
 Dependencies:
     - Bluesky
@@ -53,8 +60,9 @@ __license__ = "MIT"
 
 _logger = logging.getLogger(__name__)
 
+
 def parse_args(args):
-    """ Parse command line parameters
+    """Parse command line parameters
 
     Args:
         args (List[str]): command line parameters as list of strings
@@ -76,8 +84,8 @@ def parse_args(args):
         "--redis_host",
         dest="redis_host",
         default="localhost",
-        help="redis host for bliss data"
-    )
+        help="redis host for bliss data",
+        )
 
     parser.add_argument(
         "--redis-port",
@@ -93,7 +101,7 @@ def parse_args(args):
         "--zmq_host",
         dest="zmq_host",
         default="localhost",
-        help="zmq host for bluesky RemoteDispatcher"
+        help="zmq host for bluesky RemoteDispatcher",
     )
 
     parser.add_argument(
@@ -134,10 +142,7 @@ def setup_logging(loglevel):
     """
     logformat = "[%(asctime)s] %(levelname)s:%(name)s:%(message)s"
     logging.basicConfig(
-        level=loglevel,
-        stream=sys.stdout,
-        format=logformat,
-        datefmt="%d-%m-%Y %H:%M:%S"
+        level=loglevel, stream=sys.stdout, format=logformat, datefmt="%d-%m-%Y %H:%M:%S"
     )
 
 
@@ -146,7 +151,8 @@ def main() -> None:
 
     This function parses command-line arguments, sets up logging, initializes the
     Redis and ZMQ connections, and starts listening for scan documents. It integrates
-    the Bluesky RemoteDispatcher and BlissdataDispatcher to push scan data to Redis streams.
+    the Bluesky RemoteDispatcher and BlissdataDispatcher to push scan data to Redis
+    streams.
 
     Returns:
         None
