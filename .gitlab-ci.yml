@@ -9,9 +9,10 @@ variables:
   SHORT_SHA: $CI_COMMIT_SHORT_SHA
 lint:
   image: python:3.9
+  before_script:
+    - pip install tox
   script:
-    - pip install flake8
-    - flake8 .  # Run flake8 on the entire repository
+    - tox -e flake8
 build-docs:
   stage: build
   image: python
