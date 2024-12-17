@@ -232,6 +232,8 @@ class BlissdataDispatcher:
                 elem["dtype"] = 'float64'
             elif dtype == "integer":
                 elem["dtype"] = 'int64'
+            elif dtype == "boolean":
+                elem["dtype"] = "bool"
             elif dtype == "array":
                 numpy_dtype = dev.get("numpy_dtype")
                 if numpy_dtype is None:
