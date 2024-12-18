@@ -45,4 +45,4 @@ Documentation:
 --------------
 For more detailed documentation, visit:
 
-    `https://fs-ec.pages.desy.de/bluesky_blissdata/`
+    [https://fs-ec.pages.desy.de/bluesky_blissdata/](https://fs-ec.pages.desy.de/bluesky_blissdata/)
