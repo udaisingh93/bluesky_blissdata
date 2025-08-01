@@ -47,9 +47,12 @@ Author: Udai Singh
 License: MIT
 """
 
-import argparse
 import logging
 import sys
+from typing import Optional
+
+import typer
+from pydantic import BaseModel, Field, field_validator
 from bluesky.callbacks.zmq import RemoteDispatcher
 from bluesky_blissdata.dispatcher import BlissdataDispatcher
 from bluesky_blissdata import __version__
@@ -61,77 +64,48 @@ __license__ = "MIT"
 _logger = logging.getLogger(__name__)
 
 
-def parse_args(args):
-    """Parse command line parameters
+class RedisConfig(BaseModel):
+    """Redis server configuration"""
+    host: str = Field(default="localhost", description="Redis host for bliss data")
+    port: int = Field(default=6379, ge=1, le=65535, description="Redis connection port")
 
-    Args:
-        args (List[str]): command line parameters as list of strings
-            (for example  ``["--help"]``).
 
-    Returns:
-        :obj:`argparse.Namespace`: command line parameters namespace
-    """
-    parser = argparse.ArgumentParser(description="Bluesky blissdata interface")
-
-    parser.add_argument(
-        "--version",
-        action="version",
-        version=f"bluesky-blissdata {__version__}",
+class ZmqConfig(BaseModel):
+    """ZMQ server configuration"""
+    host: str = Field(
+        default="localhost", description="ZMQ host for bluesky RemoteDispatcher"
     )
-
-    parser.add_argument(
-        "--redis-host",
-        "--redis_host",
-        dest="redis_host",
-        default="localhost",
-        help="redis host for bliss data",
-    )
-
-    parser.add_argument(
-        "--redis-port",
-        "--redis_port",
-        dest="redis_port",
-        default=6379,
-        type=int,
-        help="redis connection port",
-    )
-
-    parser.add_argument(
-        "--zmq-host",
-        "--zmq_host",
-        dest="zmq_host",
-        default="localhost",
-        help="zmq host for bluesky RemoteDispatcher",
-    )
-
-    parser.add_argument(
-        "--zmq-port",
-        "--zmq_port",
-        dest="zmq_port",
+    port: int = Field(
         default=5578,
-        type=int,
-        help="zmq port for bluesky RemoteDispatcher",
+        ge=1,
+        le=65535,
+        description="ZMQ port for bluesky RemoteDispatcher"
     )
 
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        dest="loglevel",
-        help="set loglevel to INFO",
-        action="store_const",
-        const=logging.INFO,
-    )
 
-    parser.add_argument(
-        "-vv",
-        "--very-verbose",
-        dest="loglevel",
-        help="set loglevel to DEBUG",
-        action="store_const",
-        const=logging.DEBUG,
-    )
+class AppConfig(BaseModel):
+    """Application configuration"""
+    redis: RedisConfig = Field(default_factory=RedisConfig)
+    zmq: ZmqConfig = Field(default_factory=ZmqConfig)
+    log_level: Optional[int] = Field(default=None, description="Logging level")
 
-    return parser.parse_args(args)
+    @field_validator('log_level')
+    @classmethod
+    def validate_log_level(cls, v):
+        valid_levels = [logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR]
+        if v is not None and v not in valid_levels:
+            raise ValueError('Invalid log level')
+        return v
+
+
+app = typer.Typer(help="Bluesky blissdata interface")
+
+
+def version_callback(value: bool):
+    """Show version and exit"""
+    if value:
+        typer.echo(f"bluesky-blissdata {__version__}")
+        raise typer.Exit()
 
 
 def setup_logging(loglevel):
@@ -146,29 +120,77 @@ def setup_logging(loglevel):
     )
 
 
-def main() -> None:
+@app.command()
+def main(
+    redis_host: str = typer.Option(
+        "localhost",
+        "--redis-host", "--redis_host",
+        help="Redis host for bliss data"
+    ),
+    redis_port: int = typer.Option(
+        6379,
+        "--redis-port", "--redis_port",
+        help="Redis connection port",
+        min=1, max=65535
+    ),
+    zmq_host: str = typer.Option(
+        "localhost",
+        "--zmq-host", "--zmq_host",
+        help="ZMQ host for bluesky RemoteDispatcher"
+    ),
+    zmq_port: int = typer.Option(
+        5578,
+        "--zmq-port", "--zmq_port",
+        help="ZMQ port for bluesky RemoteDispatcher",
+        min=1, max=65535
+    ),
+    verbose: bool = typer.Option(
+        False,
+        "-v", "--verbose",
+        help="Set loglevel to INFO"
+    ),
+    very_verbose: bool = typer.Option(
+        False,
+        "-vv", "--very-verbose",
+        help="Set loglevel to DEBUG"
+    ),
+    version: Optional[bool] = typer.Option(
+        None,
+        "--version",
+        callback=version_callback,
+        is_eager=True,
+        help="Show version and exit"
+    )
+) -> None:
     """Main entry point for the script
 
     This function parses command-line arguments, sets up logging, initializes the
     Redis and ZMQ connections, and starts listening for scan documents. It integrates
     the Bluesky RemoteDispatcher and BlissdataDispatcher to push scan data to Redis
     streams.
-
-    Returns:
-        None
     """
-    args = parse_args(sys.argv[1:])
-    setup_logging(args.loglevel)
+    try:
+        config = AppConfig(
+            redis=RedisConfig(host=redis_host, port=redis_port),
+            zmq=ZmqConfig(host=zmq_host, port=zmq_port),
+            log_level=(
+                logging.DEBUG if very_verbose
+                else (logging.INFO if verbose else None)
+            )
+        )
+    except Exception as e:
+        typer.echo(f"Configuration error: {e}", err=True)
+        raise typer.Exit(1)
+
+    setup_logging(config.log_level)
 
     _logger.info("starting bluesky_blissdata")
-    _logger.info(f"Connection to redis sever: {args.redis_host}:{args.redis_port}")
-    _logger.info(f"Connection to zmq sever: {args.zmq_host}:{args.zmq_port}")
+    _logger.info(f"Connection to redis server: {config.redis.host}:{config.redis.port}")
+    _logger.info(f"Connection to zmq server: {config.zmq.host}:{config.zmq.port}")
 
-    # Initialize RemoteDispatcher for Bluesky
-    d = RemoteDispatcher((args.zmq_host, args.zmq_port))
-    post_document = BlissdataDispatcher(args.redis_host, args.redis_port)
+    d = RemoteDispatcher((config.zmq.host, config.zmq.port))
+    post_document = BlissdataDispatcher(config.redis.host, config.redis.port)
 
-    # Subscribe the BlissdataDispatcher to the RemoteDispatcher
     d.subscribe(post_document)
     d.start()
 
@@ -176,4 +198,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    app()
