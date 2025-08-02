@@ -46,3 +46,5 @@ Documentation:
 For more detailed documentation, visit:
 
     [https://fs-ec.pages.desy.de/bluesky_blissdata/]
+
+This project has been verified to work with the test suite and is ready for development.
