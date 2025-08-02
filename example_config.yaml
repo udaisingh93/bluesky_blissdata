@@ -1,0 +1,10 @@
+
+redis:
+  host: "redis.example.com"
+  port: 6380
+
+zmq:
+  host: "zmq.example.com"
+  port: 5579
+
+log_level: "INFO"
