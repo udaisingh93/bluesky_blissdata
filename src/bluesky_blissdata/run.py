@@ -49,9 +49,11 @@ License: MIT
 
 import logging
 import sys
+from pathlib import Path
 from typing import Optional
 
 import typer
+import yaml
 from pydantic import BaseModel, Field, field_validator
 from bluesky.callbacks.zmq import RemoteDispatcher
 from bluesky_blissdata.dispatcher import BlissdataDispatcher
@@ -97,6 +99,45 @@ class AppConfig(BaseModel):
             raise ValueError('Invalid log level')
         return v
 
+    @classmethod
+    def from_yaml(cls, yaml_path: Path) -> "AppConfig":
+        """Load configuration from YAML file"""
+        try:
+            with open(yaml_path, 'r') as f:
+                yaml_data = yaml.safe_load(f)
+
+            if yaml_data is None:
+                yaml_data = {}
+
+            config_data = {}
+
+            if 'redis' in yaml_data:
+                config_data['redis'] = RedisConfig(**yaml_data['redis'])
+
+            if 'zmq' in yaml_data:
+                config_data['zmq'] = ZmqConfig(**yaml_data['zmq'])
+
+            if 'log_level' in yaml_data:
+                log_level_str = yaml_data['log_level']
+                if isinstance(log_level_str, str):
+                    level_map = {
+                        'DEBUG': logging.DEBUG,
+                        'INFO': logging.INFO,
+                        'WARNING': logging.WARNING,
+                        'ERROR': logging.ERROR
+                    }
+                    config_data['log_level'] = level_map.get(log_level_str.upper())
+                else:
+                    config_data['log_level'] = log_level_str
+
+            return cls(**config_data)
+        except FileNotFoundError:
+            raise typer.BadParameter(f"Configuration file not found: {yaml_path}")
+        except yaml.YAMLError as e:
+            raise typer.BadParameter(f"Invalid YAML in configuration file: {e}")
+        except Exception as e:
+            raise typer.BadParameter(f"Error loading configuration: {e}")
+
 
 app = typer.Typer(help="Bluesky blissdata interface")
 
@@ -122,26 +163,35 @@ def setup_logging(loglevel):
 
 @app.command()
 def main(
-    redis_host: str = typer.Option(
-        "localhost",
-        "--redis-host", "--redis_host",
-        help="Redis host for bliss data"
+    config: Optional[Path] = typer.Option(
+        None,
+        "--config", "-c",
+        help="Path to YAML configuration file",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True
     ),
-    redis_port: int = typer.Option(
-        6379,
+    redis_host: Optional[str] = typer.Option(
+        None,
+        "--redis-host", "--redis_host",
+        help="Redis host for bliss data (overrides config file)"
+    ),
+    redis_port: Optional[int] = typer.Option(
+        None,
         "--redis-port", "--redis_port",
-        help="Redis connection port",
+        help="Redis connection port (overrides config file)",
         min=1, max=65535
     ),
-    zmq_host: str = typer.Option(
-        "localhost",
+    zmq_host: Optional[str] = typer.Option(
+        None,
         "--zmq-host", "--zmq_host",
-        help="ZMQ host for bluesky RemoteDispatcher"
+        help="ZMQ host for bluesky RemoteDispatcher (overrides config file)"
     ),
-    zmq_port: int = typer.Option(
-        5578,
+    zmq_port: Optional[int] = typer.Option(
+        None,
         "--zmq-port", "--zmq_port",
-        help="ZMQ port for bluesky RemoteDispatcher",
+        help="ZMQ port for bluesky RemoteDispatcher (overrides config file)",
         min=1, max=65535
     ),
     verbose: bool = typer.Option(
@@ -168,28 +218,73 @@ def main(
     Redis and ZMQ connections, and starts listening for scan documents. It integrates
     the Bluesky RemoteDispatcher and BlissdataDispatcher to push scan data to Redis
     streams.
+
+    Configuration precedence (highest to lowest):
+    1. Command-line arguments
+    2. YAML configuration file
+    3. Default values
     """
     try:
-        config = AppConfig(
-            redis=RedisConfig(host=redis_host, port=redis_port),
-            zmq=ZmqConfig(host=zmq_host, port=zmq_port),
-            log_level=(
-                logging.DEBUG if very_verbose
-                else (logging.INFO if verbose else None)
-            )
+        if config:
+            app_config = AppConfig.from_yaml(config)
+        else:
+            app_config = AppConfig()
+
+        redis_config_data = {}
+        if redis_host is not None:
+            redis_config_data['host'] = redis_host
+        else:
+            redis_config_data['host'] = app_config.redis.host
+
+        if redis_port is not None:
+            redis_config_data['port'] = redis_port
+        else:
+            redis_config_data['port'] = app_config.redis.port
+
+        zmq_config_data = {}
+        if zmq_host is not None:
+            zmq_config_data['host'] = zmq_host
+        else:
+            zmq_config_data['host'] = app_config.zmq.host
+
+        if zmq_port is not None:
+            zmq_config_data['port'] = zmq_port
+        else:
+            zmq_config_data['port'] = app_config.zmq.port
+
+        cli_log_level = (
+            logging.DEBUG if very_verbose
+            else (logging.INFO if verbose else None)
+        )
+        final_log_level = (
+            cli_log_level if cli_log_level is not None else app_config.log_level
+        )
+
+        final_config = AppConfig(
+            redis=RedisConfig(**redis_config_data),
+            zmq=ZmqConfig(**zmq_config_data),
+            log_level=final_log_level
         )
     except Exception as e:
         typer.echo(f"Configuration error: {e}", err=True)
         raise typer.Exit(1)
 
-    setup_logging(config.log_level)
+    setup_logging(final_config.log_level)
 
     _logger.info("starting bluesky_blissdata")
-    _logger.info(f"Connection to redis server: {config.redis.host}:{config.redis.port}")
-    _logger.info(f"Connection to zmq server: {config.zmq.host}:{config.zmq.port}")
+    _logger.info(
+        f"Connection to redis server: "
+        f"{final_config.redis.host}:{final_config.redis.port}"
+    )
+    _logger.info(
+        f"Connection to zmq server: "
+        f"{final_config.zmq.host}:{final_config.zmq.port}"
+    )
 
-    d = RemoteDispatcher((config.zmq.host, config.zmq.port))
-    post_document = BlissdataDispatcher(config.redis.host, config.redis.port)
+    d = RemoteDispatcher((final_config.zmq.host, final_config.zmq.port))
+    post_document = BlissdataDispatcher(
+        final_config.redis.host, final_config.redis.port
+    )
 
     d.subscribe(post_document)
     d.start()
